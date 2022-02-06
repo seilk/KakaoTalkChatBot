@@ -1,35 +1,3 @@
-/**
- * (string) room
- * (string) sender
- * (boolean) isGroupChat
- * (void) replier.reply(message)
- * (boolean) replier.reply(room, message, hideErrorToast = false) // 전송 성공시 true, 실패시 false 반환
- * (string) imageDB.getProfileBase64()
- * (string) packageName
- */
-const scriptName = "Weather";
-
-function isNaN(val){
-  const n = Number(val);
-  return n!==n;
-}
-
-function recompile_bot_func(){
-  let compile_result = Api.compile("Weather");
-  if(compile_result == true){
-    return "Compile Complete";
-  }
-  else{
-    return "Compile Failed";
-  }
-}
-
-function dict_init(dict_cmd){
-  dict_cmd["/날씨"]=dict_cmd["/미세먼지"]="/날씨 서울";
-  dict_cmd["/시크릿쥬쥬"]=dict_cmd["/시크릿쥬쥬비행기"]=dict_cmd["/쥬쥬"]="/시크릿쥬쥬비행기"
-  dict_cmd["/개추"]=dict_cmd["/개추한번눌러볼까?"]=dict_cmd["/개추한번눌러볼까"]=dict_cmd["/개추한번"]="/개추"
-}
-
 //내일날씨 함수
 function getTomorrowWeatherInfo(tpos){
   try{
@@ -108,71 +76,32 @@ function getWeatherInfo(pos) {
   }
 }
 
-function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
-  msg = msg.trim();
-  var str_split_Arr=[]
-  str_split_Arr=msg.split(" ");
-  let dict_cmd = {};
-  dict_init(dict_cmd);
-  if (str_split_Arr[0]=="/hello"){
-    replier.reply("안녕하세요. 날씨를 확인하고 싶으시면 \"/날씨 (지역명)\" 혹은 \"/날씨\"를 입력하세요.")
-    return;
-  }
-  else if (str_split_Arr[0]=="/bye"){
-    replier.reply("저를 보내지 말아요.")
-    return;
-  }
-  else if(str_split_Arr[0].trim()=="/compile"){
-    replier.reply(recompile_bot_func());
+//응답
+if (str_split_Arr[0] == "/날씨"){
+  //오사카 이스터에그
+  if (str_split_Arr.length > 1 && str_split_Arr[1].trim()=="오사카"){
+    replier.reply("나츠키님한테 직접 물어보세요. 간현상");
     return;
   }
 
-  //날씨
-  else if (str_split_Arr[0] == "/날씨"){
-    //오사카 이스터에그
-    if (str_split_Arr.length > 1 && str_split_Arr[1].trim()=="오사카"){
-      replier.reply("나츠키님한테 직접 물어보세요. 간현상");
-      return;
-    }
-
-    //내일 날씨
-    else if (str_split_Arr.length > 1 && str_split_Arr[1].indexOf("내일")==0){
-      var pos = str_split_Arr[1].length < 3 ? str_split_Arr[1] : "내일서울";
-      var result=getTomorrowWeatherInfo(pos.trim());
-      if (result==null){
-        replier.reply(pos + "의 날씨 정보를 가져올 수 없습니다. 올바른 형식을 확인해주세요.");
-        return;
-      }
-      replier.reply(result);
-      return;
-    }
-    //오늘 날씨
-    var pos = str_split_Arr.length > 1 ? str_split_Arr[1] : "서울";
-    var result = getWeatherInfo(pos.trim());
-    if(result == null) {
+  //내일 날씨
+  else if (str_split_Arr.length > 1 && str_split_Arr[1].indexOf("내일")==0){
+    var pos = str_split_Arr[1].length < 3 ? str_split_Arr[1] : "내일서울";
+    var result=getTomorrowWeatherInfo(pos.trim());
+    if (result==null){
       replier.reply(pos + "의 날씨 정보를 가져올 수 없습니다. 올바른 형식을 확인해주세요.");
       return;
     }
     replier.reply(result);
     return;
   }
-
-  //시크릿쥬쥬
-  else if(dict_cmd[msg]=="/시크릿쥬쥬비행기"){
-    replier.reply("다 준비 되셨으면 출발해볼까요~ 치링치링 치리링~");
+  //오늘 날씨
+  var pos = str_split_Arr.length > 1 ? str_split_Arr[1] : "서울";
+  var result = getWeatherInfo(pos.trim());
+  if(result == null) {
+    replier.reply(pos + "의 날씨 정보를 가져올 수 없습니다. 올바른 형식을 확인해주세요.");
     return;
   }
-
-  //개추
-  else if(dict_cmd[msg]=="/개추"){
-    replier.reply("날씨 눈나 좋으면 개 추 한번 눌러볼까?");
-    return;
-  }
-
-  //아직 없는 명령어
-  else if (msg[0]==="/"){
-    replier.reply("아직 없는 명령어예요. 원하시는 명령을 개발자에게 직접 알려주세요!");
-    return;
-  }
-  
+  replier.reply(result);
+  return;
 }
