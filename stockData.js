@@ -48,5 +48,5 @@ function getStockInfo(name){
 //국내주식
   if(dict_cmd[msgArr[0]]=="/주가" && msgArr.length>1){
     var name= msgArr[1].trim()
-    replier.reply(getStockInfo(name))
+    replier.reply(getStockInfo(name))//
   }
