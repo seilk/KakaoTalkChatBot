@@ -86,7 +86,7 @@ if (str_split_Arr[0] == "/날씨"){
 
   //내일 날씨
   else if (str_split_Arr.length > 1 && str_split_Arr[1].indexOf("내일")==0){
-    var pos = str_split_Arr[1].length < 3 ? str_split_Arr[1] : "내일서울";
+    var pos = str_split_Arr[1].length > 2 ? str_split_Arr[1] : "내일서울";
     var result=getTomorrowWeatherInfo(pos.trim());
     if (result==null){
       replier.reply(pos + "의 날씨 정보를 가져올 수 없습니다. 올바른 형식을 확인해주세요.");
