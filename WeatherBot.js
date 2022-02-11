@@ -1,107 +1,99 @@
-//내일날씨 함수
-function getTomorrowWeatherInfo(tpos){
-  try{
-    var data = Utils.getWebText("https://m.search.naver.com/search.naver?query="+tpos+"%20날씨");
-    data = data.replace(/<[^>]+>/g,""); //태그 삭제
-    data = data.split("내일의 날씨")[1]; //날씨 정보 시작 부분의 윗부분 삭제
-    data = data.split("시간별 예보")[0]; //날씨 정보 끝 부분의 아래쪽 부분 삭제
-    data = data.trim(); //위아래에 붙은 불필요한 공백 삭제
-    data = data.replace(/\s+/g," ");
-    data = data.split("\n"); //엔터 단위로 자름
-    data = data[0].split(" ")
-    TemperatureAM = parseInt(data[3].replace("온도","").trim().slice(0,data.length-1));
-    infoAM = data[1];
-    RainAM = data[6].trim();
-    DustAM = data[8].trim();
-    sDustAM = data[10].trim();
-
-    TemperaturePM = parseInt(data[14].replace("온도","").trim().slice(0,data.length-1));
-    infoPM = data[12].trim();
-    RainPM = data[17].trim();
-    DustPM = data[19].trim();
-    sDustPM = data[21].trim();
-    
-    announcement = "내일 "+ tpos.slice(2,tpos.length)+"의 날씨는?"
-    if (isNaN(TemperatureAM)){
-        throw new NullPointException();
-      }
-    var results = [];
-    results[0] = "<<오전>>" + "---" + "[" +infoAM+"]";
-    results[1] = "기온 : "+TemperatureAM+"℃";
-    results[2] = "강수확률 : "+RainAM;
-    results[3] = "미세먼지 : "+DustAM;
-    results[4] = "초미세먼지 : "+sDustAM;
-    results[5] = " ";
-    results[6] = "<<오후>>" + "---" + "[" +infoPM+"]";
-    results[7] = "기온 : "+TemperaturePM+"℃";
-    results[8] = "강수확률 : "+RainPM;
-    results[9] = "미세먼지 : "+DustPM;
-    results[10] = "초미세먼지 : "+sDustPM;
-    results.splice(0,0,announcement);
-    var res = results.join("\n");
-    return res;}
-  catch(e){
-    return null;
-  }
-}
-
 //오늘날씨 함수
 function getWeatherInfo(pos) {
   try{
-    var data = Utils.getWebText("https://m.search.naver.com/search.naver?query="+pos+"%20날씨");
-    data = data.replace(/<[^>]+>/g,""); //태그 삭제
-    data = data.split("오늘의 날씨")[1]; //날씨 정보 시작 부분의 윗부분 삭제
-    data = data.split("시간별 예보")[0]; //날씨 정보 끝 부분의 아래쪽 부분 삭제
-    data = data.trim(); //위아래에 붙은 불필요한 공백 삭제
-    data = data.replace(/\s+/g," ");
-    data = data.split("\n")[0]; //엔터 단위로 자름
-    data = data.split(" ");
-    Temperature = parseInt(data[2].replace("온도","").slice(0,data.length-1).trim());
-    if (isNaN(Temperature)){
-      throw new NullPointException()
+    var urlBase="https://m.search.naver.com/search.naver?query="+pos+"날씨"
+    var htmlBase = org.jsoup.Jsoup.connect(urlBase).get()
+                  
+    var weatherInfo1=htmlBase.select("div[class=weather_graphic]");
+    var weatherInfo2=htmlBase.select("div[class=temperature_info]");
+
+
+    //현재 기후, 온도
+    var curClimate=weatherInfo1.select("i[class=wt_icon ico_wt1]").select("span").text()
+    var curTempArr=weatherInfo1.select("div[class=temperature_text]")
+                  .select("strong").text().split(" ")
+    var curTemp=curTempArr[1].slice(2,curTempArr[1].length)
+    //어제대비 기온변화, 강수량
+    var tempChange=weatherInfo2.select("span[class=temperature up]").text()
+    var rainPercentArr=weatherInfo2.select("dl[class=summary_list]")
+                        .select("dd[class=desc]").text().split(" ")
+    
+    var weatherEmoji = ""
+    if (curClimate.indexOf("맑음")!=-1){
+      weatherEmoji="☀️"
     }
-    var results = [];
-    results[0] = "현재온도 : "+Temperature+"℃";
-    results[1] = "어제보다 " + data[4].slice(0,data.length-3).trim() +"C"+ " " + data[5].trim();
-    results[2] = data[13].trim() + " : "+data[14].trim(); //미세
-    results[3] = data[15].trim() + " : "+data[16].trim();  //초미세
-    results[4] = "습도 : " +data[10].trim();
-    results[5] = "바람 : " +data[12].trim(); 
-    results[6] = data[17].trim()+ " : " +data[18].trim(); //자외선
-    results[7] = data[19].trim()+ " : " + data[20].trim(); //일몰
-    var result = "[" + pos + " 날씨/미세먼지 정보] "+"\n!!"+data[0]+"!!\n"+results.join("\n");
-    return result; //결과 반환
+    else if (curClimate.indexOf("구름많음")!=-1 ||curClimate.indexOf("흐림")!=-1){
+      weatherEmoji="☁️"
+    }
+    else if(curClimate.indexOf("비")!=-1){
+      weatherEmoji="🌧"
+    }
+    else if(curClimate.indexOf("눈")!=-1){
+      weatherEmoji="❄️"
+    }
+
+    var res=[]
+    res[0]="현재 "+pos+"날씨 : "+weatherEmoji+curClimate+"\n"
+    res[1]= "🌡현재 온도 : "+curTemp
+    res[2]="(어제보다 "+tempChange+")"+"\n"
+    res[3]="☂️강수확률 : "+rainPercentArr[0]
+    res[4]="\n⎯⎯⎯⎯⎯\n"
+    res[5]=getDustInfo(pos)
+    var ans = res.join("\n")
+    return ans
+
   }catch(e){
-    return null;
+    return pos+"의 날씨정보를 가져올 수 없습니다.";
   }
 }
 
-//응답
-if (str_split_Arr[0] == "/날씨"){
-  //오사카 이스터에그
-  if (str_split_Arr.length > 1 && str_split_Arr[1].trim()=="오사카"){
-    replier.reply("나츠키님한테 직접 물어보세요. 간현상");
-    return;
-  }
+function getDustInfo(pos){
+  try{
+    var urlBase="https://m.search.naver.com/search.naver?sm=mtb_hty.top&where=m&oquery=&tqi=hlUlIsp0JWCsskWVdS0ssssstxh-086230&query="+pos+"+미세먼지";
+    var htmlBase=org.jsoup.Jsoup.connect(urlBase).get();
+    
+    var updateInfo=htmlBase.select("div[class=update_info]")
+    var updateInfoTime=updateInfo.select("span[class=time]").text().split(" ")
 
-  //내일 날씨
-  else if (str_split_Arr.length > 1 && str_split_Arr[1].indexOf("내일")==0){
-    var pos = str_split_Arr[1].length > 2 ? str_split_Arr[1] : "내일서울";
-    var result=getTomorrowWeatherInfo(pos.trim());
-    if (result==null){
-      replier.reply(pos + "의 날씨 정보를 가져올 수 없습니다. 올바른 형식을 확인해주세요.");
-      return;
+    var dustInfos=htmlBase.select("li[class=_who _info_layer]")
+                  .select("ul[class=inner_box]");
+    var normalDustInfo=dustInfos.select("li[class=level6 _fine_dust _level]");
+    var ultraFineDustInfo=dustInfos.select("li[class=level6 _ultrafine_dust _level]");
+
+    var normalDust1=normalDustInfo.select("div[class=figure_box _value]").text();
+    var normalDust2=normalDustInfo.select("strong[class=figure_text _text]").text();
+
+    var ultraFineDust1=ultraFineDustInfo.select("div[class=figure_box _value]").text();
+    var ultraFineDust2=ultraFineDustInfo.select("strong[class=figure_text]").text();
+
+    var normalDustInfo=[normalDust1,normalDust2];
+    var ultraFineDustInfo=[ultraFineDust1,ultraFineDust2];
+    
+    if (normalDustInfo[0]==""||updateInfoTime[0]+updateInfoTime[1]==undefined||ultraFineDustInfo[1]==""){
+      throw NullPointException;
     }
-    replier.reply(result);
-    return;
+    var res=[];
+    res[0]=pos+" 미세/초미세먼지 정보";
+    res[1]="("+updateInfoTime[0]+updateInfoTime[1]+" 업데이트)\n";
+    res[2]="😷미세먼지 : "+normalDustInfo[0];
+    res[3]="WHO 기준 ["+normalDustInfo[1]+"]\n"
+    res[4]="🤢초미세먼지 : "+ultraFineDustInfo[0];
+    res[5]="WHO 기준 ["+ultraFineDustInfo[1]+"]"
+
+    var ans = res.join("\n")
+    return ans
   }
-  //오늘 날씨
-  var pos = str_split_Arr.length > 1 ? str_split_Arr[1] : "서울";
-  var result = getWeatherInfo(pos.trim());
-  if(result == null) {
-    replier.reply(pos + "의 날씨 정보를 가져올 수 없습니다. 올바른 형식을 확인해주세요.");
-    return;
+  catch(e){
+    return "미세먼지는 동이름, 동네이름으로 검색해주세요.\nex)/미세 신수동"
   }
-  replier.reply(result);
-  return;
+}
+function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
+  msg = msg.trim();
+  msgArr=msg.split(" ");
+  if (msgArr[0]=="/날씨"){
+    replier.reply(getWeatherInfo(msgArr[1]));
+  }
+  if (msgArr[0]=="/미세"){
+    replier.reply(getDustInfo(msgArr[1]));
+  }
 }
